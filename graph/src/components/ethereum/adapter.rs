@@ -171,15 +171,65 @@ impl<'a> FromIterator<&'a DataSource> for EthereumLogFilter {
 
 #[derive(Clone, Debug)]
 pub struct EthereumCallFilter {
-    pub contract_addresses_function_signatures: HashMap<Address, HashSet<String>>,
+    pub contract_addresses_function_signatures: HashMap<Address, HashSet<[u8; 4]>>,
 }
 
-impl FromIterator<(Address, String)> for EthereumCallFilter {
+impl EthereumCallFilter {
+    pub fn matches(&self, call: &EthereumCall) -> bool {
+        // Ensure the call is to a contract the filter expressed an interest in
+        if !self
+            .contract_addresses_function_signatures
+            .contains_key(&call.to) {
+                return false
+            }
+        // If the call is to a contract with no specified functions, keep the call        
+        if self
+            .contract_addresses_function_signatures
+            .get(&call.to)
+            .unwrap()
+            .is_empty() {
+                // Allow the ability to match on calls to a contract generally
+                // If you want to match on a generic call to contract this limits you
+                // from matching with a specific call to a contract
+                return true
+            }
+        // Ensure the call is to run a function the filter expressed an interest in
+        self
+            .contract_addresses_function_signatures
+            .get(&call.to)
+            .unwrap()
+            .contains(&call.input.0[..4])
+    }
+}
+
+impl <'a> FromIterator<&'a DataSource> for EthereumCallFilter {
     fn from_iter<I>(iter: I) -> Self
     where
-        I: IntoIterator<Item = (Address, String)>,
+        I: IntoIterator<Item = &'a DataSource>,
     {
-        let mut lookup: HashMap<Address, HashSet<String>> = HashMap::new();
+        iter
+            .into_iter()
+            .flat_map(|data_source| {
+                let contract_addr = data_source.source.address;
+                data_source
+                    .mapping
+                    .transaction_handlers
+                    .iter()
+                    .map(move |call_handler| {
+                        let sig = keccak256(call_handler.function.as_bytes());
+                        (contract_addr, [sig[0], sig[1], sig[2], sig[3]])
+                    })
+            })
+            .collect::<EthereumCallFilter>()
+    }
+}
+
+impl FromIterator<(Address, [u8; 4])> for EthereumCallFilter {
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = (Address, [u8; 4])>,
+    {
+        let mut lookup: HashMap<Address, HashSet<[u8; 4]>> = HashMap::new();
         iter.into_iter().for_each(|(address, function_signature)| {
             if lookup.contains_key(&address) {
                 lookup.insert(address, HashSet::default());
@@ -190,6 +240,19 @@ impl FromIterator<(Address, String)> for EthereumCallFilter {
             });
         });
         EthereumCallFilter { contract_addresses_function_signatures: lookup }
+    }
+}
+
+impl From<EthereumBlockFilter> for EthereumCallFilter {
+    fn from(ethereum_block_filter: EthereumBlockFilter) -> Self {
+        Self {
+            contract_addresses_function_signatures: ethereum_block_filter
+                .contract_addresses
+                .into_iter()
+                .map(|address| {
+                    (address, HashSet::default())
+                }).collect::<HashMap<Address, HashSet<[u8; 4]>>>(),
+        }
     }
 }
 
@@ -206,6 +269,20 @@ impl FromIterator<Address> for EthereumBlockFilter {
         EthereumBlockFilter{
             contract_addresses: iter.into_iter().collect(),
         }
+    }
+}
+
+impl <'a> FromIterator<&'a DataSource> for EthereumBlockFilter {
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = &'a DataSource>,
+    {    
+        iter
+            .into_iter()
+            .map(|data_source| {
+                data_source.source.address;
+            })
+            .collect::<EthereumBlockFilter>()
     }
 }
 
