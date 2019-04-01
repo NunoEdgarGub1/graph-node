@@ -150,7 +150,7 @@ where
             EthereumTrigger::Block => {
                 let matching_hosts: Vec<_> = hosts
                     .iter()
-                    .filter(|host| host.matches_block(&block))
+                    .filter(|host| true) // TODO: Actually filter
                     .cloned()
                     .collect();
                 let eops = stream::iter_ok(matching_hosts)
