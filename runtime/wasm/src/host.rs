@@ -125,7 +125,7 @@ pub struct RuntimeHost {
     data_source_event_handlers: Vec<MappingEventHandler>,
     data_source_call_handlers: Vec<MappingTransactionHandler>,
     data_source_block_handler: MappingBlockHandler,
-    handle_event_sender: Sender<MappingRequest>,
+    mapping_request_sender: Sender<MappingRequest>,
     _guard: oneshot::Sender<()>,
 }
 
@@ -195,7 +195,7 @@ impl RuntimeHost {
         // Spawn a dedicated thread for the runtime.
         //
         // In case of failure, this thread may panic or simply terminate,
-        // dropping the `handle_event_receiver` which ultimately causes the
+        // dropping the `mapping_request_receiver` which ultimately causes the
         // subgraph to fail the next time it tries to handle an event.
         let conf = thread::Builder::new().name(format!(
             "{}-{}-{}",
@@ -284,7 +284,7 @@ impl RuntimeHost {
             data_source_event_handlers,
             data_source_call_handlers,
             data_source_block_handler,
-            handle_event_sender,
+            mapping_request_sender,
             _guard: cancel_sender,
         })
     }
@@ -428,7 +428,7 @@ impl RuntimeHostTrait for RuntimeHost {
         let start_time = Instant::now();
 
         Box::new(
-            self.handle_event_sender
+            self.mapping_request_sender
                 .clone()
                 .send(MappingRequest {
                     logger: logger.clone(),
