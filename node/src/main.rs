@@ -301,11 +301,21 @@ fn async_main() -> impl Future<Item = (), Error = ()> + Send + 'static {
     let (ipfs_client, ipfs_address) = match ipfs_address
         // Resolve the IPFS address into socket addresses
         .to_socket_addrs()
-        .unwrap_or_else(|e| panic!("failed to resolve IPFS address {}: {}", ipfs_address, e))
+        .unwrap_or_else(|e| {
+            panic!(
+                "failed to resolve IPFS address {}: {}",
+                security::display_url(ipfs_address),
+                e
+            )
+        })
         // Try to create an IPFS client for one of these addresses; collect
         // errors in case we can't create a client for any of them
         .fold_while(Err(vec![]), |result, address| {
-            info!(logger, "Trying IPFS node at: {}", address);
+            info!(
+                logger,
+                "Trying IPFS node at: {}",
+                security::display_socket_addr(&address),
+            );
 
             match IpfsClient::new(&format!("{}", address.ip()), address.port()) {
                 Ok(client) => Done(Ok((Arc::new(client), address))),
@@ -321,7 +331,9 @@ fn async_main() -> impl Future<Item = (), Error = ()> + Send + 'static {
         Err(errors) => {
             for (address, e) in errors.iter() {
                 error!(
-                    logger, "Failed to create IPFS client for address: {}", address;
+                    logger,
+                    "Failed to create IPFS client for address: {}",
+                    security::display_socket_addr(address);
                     "error" => format!("{}", e),
                 )
             }
@@ -338,14 +350,16 @@ fn async_main() -> impl Future<Item = (), Error = ()> + Send + 'static {
             .map_err(move |e| {
                 error!(
                     ipfs_err_logger,
-                    "Is there an IPFS node running at \"{}\"?", ipfs_address
+                    "Is there an IPFS node running at \"{}\"?",
+                    security::display_socket_addr(&ipfs_address)
                 );
                 panic!("Failed to connect to IPFS: {}", e);
             })
             .map(move |_| {
                 info!(
                     ipfs_ok_logger,
-                    "Successfully connected to IPFS node at: {}", ipfs_address
+                    "Successfully connected to IPFS node at: {}",
+                    security::display_socket_addr(&ipfs_address)
                 );
             }),
     );
@@ -378,14 +392,14 @@ fn async_main() -> impl Future<Item = (), Error = ()> + Send + 'static {
     info!(
         logger, "Connecting to Ethereum...";
         "network" => &ethereum_network_name,
-        "node" => &ethereum_node_url,
+        "node" => security::display_url(ethereum_node_url),
     );
     let eth_net_identifiers = match eth_adapter.net_identifiers(&logger).wait() {
         Ok(net) => {
             info!(
                 logger, "Connected to Ethereum";
                 "network" => &ethereum_network_name,
-                "node" => &ethereum_node_url,
+                "node" => security::display_url(ethereum_node_url),
             );
             net
         }
@@ -396,7 +410,11 @@ fn async_main() -> impl Future<Item = (), Error = ()> + Send + 'static {
     };
 
     // Set up Store
-    info!(logger, "Connecting to Postgres"; "url" => &postgres_url);
+    info!(
+        logger,
+        "Connecting to Postgres";
+        "url" => security::display_url(postgres_url.as_str())
+    );
     let store = Arc::new(DieselStore::new(
         StoreConfig {
             postgres_url,
