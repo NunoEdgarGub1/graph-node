@@ -108,8 +108,8 @@ enum MappingTrigger {
     Call {
         transaction: Arc<Transaction>,
         call: Arc<EthereumCall>,
-        inputs: Vec<Param>,
-        outputs: Vec<Param>,
+        inputs: Vec<LogParam>,
+        outputs: Vec<LogParam>,
         handler: MappingTransactionHandler,
     },
     Block {
@@ -125,7 +125,7 @@ pub struct RuntimeHost {
     data_source_event_handlers: Vec<MappingEventHandler>,
     data_source_call_handlers: Vec<MappingTransactionHandler>,
     data_source_block_handler: MappingBlockHandler,
-    handle_event_sender: Sender<HandleEventRequest>,
+    handle_event_sender: Sender<MappingRequest>,
     _guard: oneshot::Sender<()>,
 }
 
@@ -430,13 +430,15 @@ impl RuntimeHostTrait for RuntimeHost {
         Box::new(
             self.handle_event_sender
                 .clone()
-                .send(HandleEventRequest {
-                    handler_name: event_handler.handler.clone(),
+                .send(MappingRequest {
                     logger: logger.clone(),
                     block: block.clone(),
-                    transaction: transaction.clone(),
-                    log: log.clone(),
-                    params,
+                    trigger: MappingTrigger::Log {
+                        transaction: transaction.clone(),
+                        log: log.clone(),
+                        params,
+                        handler: event_handler.clone(),
+                    },
                     state,
                     result_sender,
                 })

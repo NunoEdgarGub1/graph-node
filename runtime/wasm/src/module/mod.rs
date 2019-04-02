@@ -310,11 +310,31 @@ where
         handler_name: &str,
         transaction: Arc<Transaction>,
         call: Arc<EthereumCall>,
-        inputs: Vec<Param>,
-        outputs: Vec<Param>,
+        inputs: Vec<LogParam>,
+        outputs: Vec<LogParam>,
     ) -> Result<Vec<EntityOperation>, FailureError> {
         self.start_time = Instant::now();
-        unimplemented!()
+        // Prepare an EthereumCall for the WASM runtime
+        let arg = EthereumCallData {
+            address: call.to,
+            block: EthereumBlockData::from(&self.ctx.block.block),
+            transaction: EthereumTransactionData::from(transaction.deref()),
+            inputs,
+            outputs,
+        };
+        let result = self.module.clone().invoke_export(
+            handler_name,
+            &[RuntimeValue::from(self.asc_new(&arg))],
+            &mut self,
+        );
+        result.map(|_| self.ctx.entity_operations)
+            .map_err(|err| {
+                format_err!(
+                    "Failed to handle Ethereum call with handler \"{}\": {}",
+                    handler_name,
+                    err
+                )
+            })
     }
 
     pub(crate) fn handle_ethereum_block(
@@ -322,7 +342,21 @@ where
         handler_name: &str,
     ) -> Result<Vec<EntityOperation>, FailureError> {
         self.start_time = Instant::now();
-        unimplemented!() 
+        // Prepare an EthereumBLock for the WASM runtime
+        let arg = EthereumBlockData::from(&self.ctx.block.block);
+        let result = self.module.clone().invoke_export(
+            handler_name,
+            &[RuntimeValue::from(self.asc_new(&arg))],
+            &mut self,
+        );
+        result.map(|_| self.ctx.entity_operations)
+            .map_err(|err| {
+                format_err!(
+                    "Failed to handle Ethereum block with handler \"{}\": {}",
+                    handler_name,
+                    err
+                )
+            })
     }
 }
 
