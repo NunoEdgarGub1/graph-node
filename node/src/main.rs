@@ -35,6 +35,7 @@ use graph::tokio_executor;
 use graph::tokio_timer;
 use graph::tokio_timer::timer::Timer;
 use graph::util::log::{guarded_logger, logger, register_panic_hook};
+use graph::util::security;
 use graph_core::{
     ElasticLoggingConfig, SubgraphAssignmentProvider as IpfsSubgraphAssignmentProvider,
     SubgraphInstanceManager, SubgraphRegistrar as IpfsSubgraphRegistrar,
