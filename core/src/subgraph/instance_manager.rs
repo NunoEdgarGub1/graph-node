@@ -553,7 +553,7 @@ where
     })
 }
 
-fn process_logs<B, S, T>(
+fn process_triggers<B, S, T>(
     logger: Logger,
     ctx: IndexingContext<B, S, T>,
     block_state: BlockState,
@@ -565,7 +565,7 @@ where
     S: ChainStore + Store,
     T: RuntimeHostBuilder,
 {
-    stream::iter_ok::<_, CancelableError<Error>>(logs)
+    stream::iter_ok::<_, CancelableError<Error>>(triggers)
         // Process events from the block stream
         .fold((ctx, block_state), move |(ctx, block_state), trigger| {
             let logger = logger.clone();
