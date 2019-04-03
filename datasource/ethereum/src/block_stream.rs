@@ -1323,7 +1323,7 @@ fn parse_triggers(
                     return Err(format_err!("Unable to determine transaction index for Ethereum call."))
                 }
             }
-            EthereumTrigger::Block => continue,
+            EthereumTrigger::Block(_) => continue,
         }
     }
 
@@ -1408,7 +1408,7 @@ fn parse_block_triggers(
             call_filter.matches(call)
         })
         .map(move |call| {
-            EthereumTrigger::Block
+            EthereumTrigger::Block(call.clone())
         })
         .collect()
 }
