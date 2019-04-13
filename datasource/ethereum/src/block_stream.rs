@@ -242,7 +242,6 @@ where
         call_filter: Option<EthereumCallFilter>,
         block_filter: Option<EthereumBlockFilter>,
     ) -> impl Future<Item = ReconciliationStep, Error = Error> + Send {
-        println!("-----------GETTING NEXT STEP----------------");
         let ctx = self.clone();
         let reorg_threshold = ctx.reorg_threshold;
 
@@ -278,7 +277,6 @@ where
         // Only continue if the subgraph block ptr is behind the head block ptr.
         // subgraph_ptr > head_ptr shouldn't happen, but if it does, it's safest to just stop.
         if subgraph_ptr.number >= head_ptr.number {
-            println!("-----------DONE WITH RECONCILLIATION----------------");
             return Box::new(future::ok(ReconciliationStep::Done))
                 as Box<Future<Item = _, Error = _> + Send>;
         }
@@ -318,7 +316,6 @@ where
         // Ethereum RPC calls can give us accurate data without race conditions.
         // (This is mostly due to some unfortunate API design decisions on the Ethereum side)
         if (head_ptr.number - subgraph_ptr.number) > reorg_threshold {
-            println!("-----------BEHIND REORG THRESHOLD----------------");
             // Since we are beyond the reorg threshold, the Ethereum node knows what block has
             // been permanently assigned this block number.
             // This allows us to ask the node: does subgraph_ptr point to a block that was
@@ -368,7 +365,6 @@ where
                                     debug!(ctx.logger, "Done finding next blocks.");
 
                                     if descendant_ptrs.is_empty() {
-                                        println!("-----------------ADVANCE TO DESCENDANT BLOCK------------------");                                        
                                         // No matching events in range.
                                         // Therefore, we can update the subgraph ptr without any
                                         // changes to the entity data.
@@ -392,7 +388,6 @@ where
                                                          })
                                                  }))
                                     } else {
-                                        println!("-----------------PROCESS DESCENDANT BLOCKS------------------");
                                         // The next few interesting blocks are at descendant_ptrs.
                                         // In particular, descendant_ptrs is a list of all blocks
                                         // between subgraph_ptr and descendant_ptrs.last() that
@@ -422,7 +417,6 @@ where
                                 })
                         )
                     } else {
-                        println!("-----------------REVERT THE BLOCK------------------");                        
                         // The subgraph ptr points to a block that was uncled.
                         // We need to revert this block.
                         Box::new(future::ok(ReconciliationStep::RevertBlock(subgraph_ptr)))
@@ -430,7 +424,6 @@ where
                 })
             )
         } else {
-            println!("-----------------NOT TO FAR BEHIND------------------");
             // The subgraph ptr is not too far behind the head ptr.
             // This means a few things.
             //
@@ -485,7 +478,6 @@ where
                                         calls: None,
                                     }))
                                 }
-                                println!("---------POPULATING CALLS IN POST REORG THRESHOLD BLOCK-----------");
                                 let block_with_calls = ctx
                                     .eth_adapter
                                     .calls_in_block(
