@@ -1294,7 +1294,7 @@ fn create_block_filter_from_subgraph(manifest: &SubgraphManifest) -> Option<Ethe
                 .iter()
                 .any(|block_handler| {
                     match block_handler.filter {
-                        Some(ref filter) if filter.clone().is_kind_call() => return true,
+                        Some(ref filter) if *filter == BlockHandlerFilter::Call => return true,
                         _ => return false,
                     }
                 });
@@ -1304,7 +1304,7 @@ fn create_block_filter_from_subgraph(manifest: &SubgraphManifest) -> Option<Ethe
             data_source.source.address
         })
         .collect::<HashSet<Address>>();
-    let trigger_each_block = manifest
+    let trigger_every_block = manifest
         .data_sources
         .iter()
         .any(|data_source| {
@@ -1321,12 +1321,12 @@ fn create_block_filter_from_subgraph(manifest: &SubgraphManifest) -> Option<Ethe
                 });
             has_address && has_block_handler_without_filter
         });
-    if contract_addresses.is_empty() && !trigger_each_block {
+    if contract_addresses.is_empty() && !trigger_every_block {
         return None
     }
     return Some(EthereumBlockFilter {
         contract_addresses,
-        trigger_each_block,
+        trigger_every_block,
     })
 }
 
@@ -1459,7 +1459,7 @@ fn parse_block_triggers(
             EthereumTrigger::Block(EthereumBlockTriggerType::WithCallTo(call.to))
         })
         .collect::<Vec<EthereumTrigger>>();
-    if block_filter.unwrap().trigger_each_block {
+    if block_filter.unwrap().trigger_every_block {
         triggers.push(EthereumTrigger::Block(EthereumBlockTriggerType::Every));
     }
     triggers

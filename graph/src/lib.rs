@@ -103,6 +103,7 @@ pub mod prelude {
         Link, MappingABI, MappingBlockHandler, MappingCallHandler, MappingEventHandler,
         SubgraphAssignmentProviderError, SubgraphAssignmentProviderEvent, SubgraphDeploymentId,
         SubgraphManifest, SubgraphManifestResolveError, SubgraphName, SubgraphRegistrarError,
+        SubgraphManifestValidationError, BlockHandlerFilter,
     };
     pub use crate::data::subscription::{
         QueryResultStream, Subscription, SubscriptionError, SubscriptionResult,
