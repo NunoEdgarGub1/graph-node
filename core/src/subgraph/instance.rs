@@ -97,7 +97,7 @@ where
                 let transaction = block
                     .transaction_for_log(&log)
                     .map(Arc::new)
-                    .ok_or_else(|| format_err!("Found no transaction for log"));
+                    .ok_or_else(|| format_err!("Found no transaction for event"));
                 let matching_hosts: Vec<_> = hosts
                     .iter()
                     .filter(|host| host.matches_log(&log))
