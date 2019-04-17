@@ -7,6 +7,7 @@ use std::env;
 use std::mem;
 use std::sync::Mutex;
 use std::cmp::Ordering;
+use tiny_keccak::keccak256;
 
 use graph::data::subgraph::schema::{
     SubgraphDeploymentEntity, SubgraphEntity, SubgraphVersionEntity,
@@ -15,8 +16,6 @@ use graph::prelude::{
     BlockStream as BlockStreamTrait, BlockStreamBuilder as BlockStreamBuilderTrait, *,
 };
 use graph::web3::types::*;
-
-use tiny_keccak::keccak256;
 
 enum BlockStreamState {
     /// The BlockStream is new and has not yet been polled.
