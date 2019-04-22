@@ -34,7 +34,6 @@ pub(crate) struct UnresolvedContractCall {
 pub(crate) struct MappingContext {
     logger: Logger,
     block: Arc<EthereumBlock>,
-    transaction: Arc<Transaction>,
     state: BlockState,
 }
 
@@ -43,10 +42,9 @@ pub(crate) struct MappingContext {
 /// accumulator and are therefore initialized with an empty state.
 impl Clone for MappingContext {
     fn clone(&self) -> Self {
-        EventHandlerContext {
+        MappingContext {
             logger: self.logger.clone(),
             block: self.block.clone(),
-            transaction: self.transaction.clone(),
             state: BlockState::default(),
         }
     }
